@@ -1,32 +1,32 @@
 package transaksi.View;
 
+import transaksi.Model.ModelTransaksi;
 import transaksi.Controller.ControllerTransaksi;
 import transaksi.Listener.ListenerTransaksi;
 import javax.swing.*;
 import java.awt.event.*;
 import java.sql.SQLException;
 import javax.swing.table.DefaultTableModel;
-import transaksi.Model.ModelTransaksi;
-import transaksi.Model.Transaksi;
+import java.awt.Color;
 
-/**
- * Kelas ViewTransaksi menyediakan antarmuka pengguna untuk aplikasi apotek.
- * Menampilkan form input dan tabel transaksi aktif.
- */
-public abstract class ViewTransaksi extends JFrame implements ActionListener, ListenerTransaksi {
+public class ViewTransaksi extends JFrame implements ActionListener, ListenerTransaksi {
     private JTextField txtNamaPelanggan, txtNamaObat, txtHargaSatuan, txtJumlahBeli;
     private JLabel lblNamaPelanggan, lblNamaObat, lblHargaSatuan, lblJumlahBeli;
     private JButton btnSave, btnReset, btnEdit, btnDelete;
     private JTable tblTransaksi;
     private DefaultTableModel tableModel;
     private ControllerTransaksi controllerTransaksi;
-    private Transaksi modelTransaksi;
+    private ModelTransaksi modelTransaksi;
 
+    /**
+     * Konstruktor untuk inisialisasi gui.
+     */
     public ViewTransaksi() {
         setTitle("Aplikasi Apotek");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(600, 400);
         setLayout(null);
+        setLocationRelativeTo(null); // Posisi jendela di tengah layar
 
         // Inisialisasi komponen form
         lblNamaPelanggan = new JLabel("Nama Pelanggan");
@@ -41,14 +41,17 @@ public abstract class ViewTransaksi extends JFrame implements ActionListener, Li
         btnReset = new JButton("Reset");
         btnEdit = new JButton("Edit");
         btnDelete = new JButton("Hapus");
+        
+        btnSave.setBackground(new Color(34, 139, 34)); // Hijau (simpan)
+        btnReset.setBackground(new Color(255, 165, 0)); // Oranye (reset)
+        btnEdit.setBackground(new Color(30, 144, 255)); // Biru (edit)
+        btnDelete.setBackground(new Color(220, 20, 60)); // Merah (hapus)
 
-        // Inisialisasi tabel transaksi
-        String[] columns = {"ID", "Nama Pelanggan", "Nama Obat", "Harga Satuan", "Jumlah Beli", "Tanggal"};
+        String[] columns = {"ID", "Nama Pelanggan", "Nama Obat", "Harga Satuan", "Jumlah Beli"};
         tableModel = new DefaultTableModel(columns, 0);
         tblTransaksi = new JTable(tableModel);
         JScrollPane scrollPane = new JScrollPane(tblTransaksi);
 
-        // Atur posisi komponen
         lblNamaPelanggan.setBounds(10, 10, 120, 20);
         txtNamaPelanggan.setBounds(130, 10, 200, 20);
         lblNamaObat.setBounds(10, 35, 120, 20);
@@ -63,7 +66,6 @@ public abstract class ViewTransaksi extends JFrame implements ActionListener, Li
         btnDelete.setBounds(400, 110, 80, 20);
         scrollPane.setBounds(10, 140, 560, 200);
 
-        // Tambah komponen ke frame
         add(lblNamaPelanggan);
         add(txtNamaPelanggan);
         add(lblNamaObat);
@@ -78,7 +80,6 @@ public abstract class ViewTransaksi extends JFrame implements ActionListener, Li
         add(btnDelete);
         add(scrollPane);
 
-        // Tambah listener untuk tombol
         btnSave.addActionListener(this);
         btnReset.addActionListener(this);
         btnEdit.addActionListener(this);
@@ -88,6 +89,12 @@ public abstract class ViewTransaksi extends JFrame implements ActionListener, Li
             public void mouseClicked(MouseEvent e) {
                 int row = tblTransaksi.getSelectedRow();
                 if (row >= 0) {
+                    // Isi form dengan data transaksi yang dipilih untuk edit
+                    txtNamaPelanggan.setText((String) tableModel.getValueAt(row, 1));
+                    txtNamaObat.setText((String) tableModel.getValueAt(row, 2));
+                    txtHargaSatuan.setText(String.valueOf(tableModel.getValueAt(row, 3)));
+                    txtJumlahBeli.setText(String.valueOf(tableModel.getValueAt(row, 4)));
+                    // Tampilkan total bayar
                     controllerTransaksi.showTotalBayar(row);
                 }
             }
@@ -96,12 +103,11 @@ public abstract class ViewTransaksi extends JFrame implements ActionListener, Li
         setVisible(true);
 
         // Inisialisasi MVC
-        modelTransaksi = new Transaksi();
+        modelTransaksi = new ModelTransaksi();
         controllerTransaksi = new ControllerTransaksi();
         modelTransaksi.setTransaksiListener(this);
         controllerTransaksi.setModel(modelTransaksi);
 
-        // Muat transaksi hari ini
         try {
             controllerTransaksi.loadTransaksiHariIni(this);
         } catch (SQLException e) {
@@ -109,7 +115,6 @@ public abstract class ViewTransaksi extends JFrame implements ActionListener, Li
         }
     }
 
-    // Getter untuk input
     public JTextField getNamaPelanggan() { return txtNamaPelanggan; }
     public JTextField getNamaObat() { return txtNamaObat; }
     public JTextField getHarga() { return txtHargaSatuan; }
@@ -117,13 +122,12 @@ public abstract class ViewTransaksi extends JFrame implements ActionListener, Li
     public JTable getTblTransaksi() { return tblTransaksi; }
     public DefaultTableModel getTableModel() { return tableModel; }
 
-    // Implementasi ListenerTransaksi
     @Override
-    public void onChange(Transaksi modelTransaksi) {
+    public void onChange(ModelTransaksi modelTransaksi) {
         txtNamaPelanggan.setText(modelTransaksi.getNamaPelanggan());
         txtNamaObat.setText(modelTransaksi.getNamaObat());
-        txtHargaSatuan.setText(String.valueOf(modelTransaksi.getHargaSatuan()));
-        txtJumlahBeli.setText(String.valueOf(modelTransaksi.getJumlahBeli()));
+        txtHargaSatuan.setText(String.valueOf(modelTransaksi.getHarga()));
+        txtJumlahBeli.setText(String.valueOf(modelTransaksi.getJumlah()));
     }
 
     @Override
@@ -140,11 +144,6 @@ public abstract class ViewTransaksi extends JFrame implements ActionListener, Li
     }
 
     public static void main(String[] args) {
-        new ViewTransaksi() {
-            @Override
-            public void onChange(ModelTransaksi ModelTransaksi) {
-                throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-            }
-        };
+        SwingUtilities.invokeLater(() -> new ViewTransaksi());
     }
 }

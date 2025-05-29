@@ -4,26 +4,20 @@ import transaksi.View.ViewTransaksi;
 import transaksi.Listener.ListenerTransaksi;
 import javax.swing.JOptionPane;
 
-/**
- * Kelas Transaksi merepresentasikan data transaksi penjualan obat.
- * Mengelola atribut transaksi dan perhitungan total bayar dengan diskon.
- */
 public class ModelTransaksi {
-    private int id_transaksi;
+    private int idTransaksi;
     private String nama_pelanggan;
     private String nama_obat;
     private double harga;
     private int jumlah;
     private ListenerTransaksi listenerTransaksi;
 
-    // Mengatur listener untuk memberi tahu View tentang perubahan
     protected void fireOnChange() {
         if (listenerTransaksi != null) {
             listenerTransaksi.onChange(this);
         }
     }
 
-    // Getter dan Setter untuk listener
     public ListenerTransaksi getTransaksiListener() {
         return listenerTransaksi;
     }
@@ -32,13 +26,12 @@ public class ModelTransaksi {
         this.listenerTransaksi = listenerTransaksi;
     }
 
-    // Getter dan Setter untuk atribut
     public int getIdTransaksi() {
-        return id_transaksi;
+        return idTransaksi;
     }
 
-    public void setIdTransaksi(int id_transaksi) {
-        this.id_transaksi = id_transaksi;
+    public void setIdTransaksi(int idTransaksi) {
+        this.idTransaksi = idTransaksi;
         fireOnChange();
     }
 
@@ -78,10 +71,7 @@ public class ModelTransaksi {
         fireOnChange();
     }
 
-    /**
-     * Menghitung total harga dengan diskon 10% jika jumlah beli lebih dari 5.
-     * @return Total bayar setelah diskon.
-     */
+
     public double hitungTotalBayar() {
         double total = harga * jumlah;
         if (jumlah > 5) {
@@ -90,9 +80,6 @@ public class ModelTransaksi {
         return total;
     }
 
-    /**
-     * Mengosongkan data transaksi di form.
-     */
     public void resetForm() {
         setNamaPelanggan("");
         setNamaObat("");
@@ -100,12 +87,8 @@ public class ModelTransaksi {
         setJumlah(0);
     }
 
-    /**
-     * Menampilkan pesan konfirmasi saat transaksi disimpan.
-     * @param viewTransaksi View yang digunakan untuk mendapatkan data input.
-     */
-    public void submitForm(ViewTransaksi viewTransaksi) {
-        JOptionPane.showMessageDialog(null, "Transaksi untuk " + viewTransaksi.getNamaPelanggan().getText() + 
-            " (" + viewTransaksi.getNamaObat().getText() + ") berhasil disimpan!");
+    public void submitForm(ViewTransaksi view) {
+        JOptionPane.showMessageDialog(view, "Transaksi untuk " + view.getNamaPelanggan().getText() + 
+            " (" + view.getNamaObat().getText() + ") berhasil disimpan!");
     }
 }

@@ -5,38 +5,31 @@ import transaksi.View.ViewTransaksi;
 import transaksi.Database;
 import javax.swing.*;
 import java.sql.*;
+import java.text.DecimalFormat;
 
-/**
- * Kelas ControllerTransaksi mengelola logika bisnis aplikasi apotek.
- * Menangani input pengguna, validasi, dan interaksi dengan database.
- */
 public class ControllerTransaksi {
     private ModelTransaksi model;
+    private ViewTransaksi view; // Simpan referensi ke ViewTransaksi
 
-    public void setModel(Transaksi model) {
+   
+    public void setModel(ModelTransaksi model) {
         this.model = model;
     }
 
-    /**
-     * Mengosongkan form input jika tidak kosong.
-     * @param view ViewTransaksi yang digunakan.
-     */
     public void resetForm(ViewTransaksi view) {
-        String nama_pelanggan = view.getNamaPelanggan().getText();
-        String nama_obat = view.getNamaObat().getText();
+        this.view = view; // Simpan referensi
+        String namaPelanggan = view.getNamaPelanggan().getText();
+        String namaObat = view.getNamaObat().getText();
         String harga = view.getHarga().getText();
         String jumlah = view.getJumlah().getText();
 
-        if (!nama_pelanggan.equals("") || !nama_obat.equals("") || !harga.equals("") || !jumlah.equals("")) {
+        if (!namaPelanggan.equals("") || !namaObat.equals("") || !harga.equals("") || !jumlah.equals("")) {
             model.resetForm();
         }
     }
 
-    /**
-     * Menyimpan transaksi baru ke database dan memperbarui tabel.
-     * @param view ViewTransaksi yang digunakan.
-     */
     public void submitForm(ViewTransaksi view) {
+        this.view = view; // Simpan referensi
         try {
             String nama_pelanggan = view.getNamaPelanggan().getText().trim();
             String nama_obat = view.getNamaObat().getText().trim();
@@ -65,6 +58,10 @@ public class ControllerTransaksi {
 
             // Simpan ke database
             Connection conn = Database.getConnection();
+            if (conn == null) {
+                JOptionPane.showMessageDialog(view, "Gagal terhubung ke database!");
+                return;
+            }
             String sql = "INSERT INTO transaksi (nama_pelanggan, nama_obat, harga, jumlah) VALUES (?, ?, ?, ?)";
             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             stmt.setString(1, nama_pelanggan);
@@ -73,14 +70,12 @@ public class ControllerTransaksi {
             stmt.setInt(4, jumlah);
             stmt.executeUpdate();
 
-            // Dapatkan ID transaksi
             ResultSet rs = stmt.getGeneratedKeys();
             int id_transaksi = 0;
             if (rs.next()) {
                 id_transaksi = rs.getInt(1);
             }
 
-            // Tambah ke tabel
             view.getTableModel().addRow(new Object[]{id_transaksi, nama_pelanggan, nama_obat, harga, jumlah});
             model.submitForm(view);
             model.resetForm();
@@ -91,11 +86,9 @@ public class ControllerTransaksi {
         }
     }
 
-    /**
-     * Mengedit transaksi yang dipilih di tabel.
-     * @param view ViewTransaksi yang digunakan.
-     */
+
     public void editForm(ViewTransaksi view) {
+        this.view = view; // Simpan referensi
         int selectedRow = view.getTblTransaksi().getSelectedRow();
         if (selectedRow < 0) {
             JOptionPane.showMessageDialog(view, "Pilih transaksi yang akan diedit!");
@@ -124,15 +117,19 @@ public class ControllerTransaksi {
                 return;
             }
 
-            int id_transaksi = (int) view.getTableModel().getValueAt(selectedRow, 0);
+            int idTransaksi = (int) view.getTableModel().getValueAt(selectedRow, 0);
             Connection conn = Database.getConnection();
+            if (conn == null) {
+                JOptionPane.showMessageDialog(view, "Gagal terhubung ke database!");
+                return;
+            }
             String sql = "UPDATE transaksi SET nama_pelanggan = ?, nama_obat = ?, harga = ?, jumlah = ? WHERE id_transaksi = ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setString(1, nama_pelanggan);
             stmt.setString(2, nama_obat);
             stmt.setDouble(3, harga);
             stmt.setInt(4, jumlah);
-            stmt.setInt(5, id_transaksi);
+            stmt.setInt(5, idTransaksi);
             stmt.executeUpdate();
 
             // Update tabel
@@ -147,12 +144,9 @@ public class ControllerTransaksi {
             JOptionPane.showMessageDialog(view, "Error database: " + e.getMessage());
         }
     }
-
-    /**
-     * Menghapus transaksi yang dipilih dari tabel dan database.
-     * @param view ViewTransaksi yang digunakan.
-     */
+    
     public void deleteForm(ViewTransaksi view) {
+        this.view = view; // Simpan referensi
         int selectedRow = view.getTblTransaksi().getSelectedRow();
         if (selectedRow < 0) {
             JOptionPane.showMessageDialog(view, "Pilih transaksi yang akan dihapus!");
@@ -160,11 +154,15 @@ public class ControllerTransaksi {
         }
 
         try {
-            int id_transaksi = (int) view.getTableModel().getValueAt(selectedRow, 0);
+            int idTransaksi = (int) view.getTableModel().getValueAt(selectedRow, 0);
             Connection conn = Database.getConnection();
+            if (conn == null) {
+                JOptionPane.showMessageDialog(view, "Gagal terhubung ke database!");
+                return;
+            }
             String sql = "DELETE FROM transaksi WHERE id_transaksi = ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
-            stmt.setInt(1, id_transaksi);
+            stmt.setInt(1, idTransaksi);
             stmt.executeUpdate();
 
             // Hapus dari tabel
@@ -176,30 +174,61 @@ public class ControllerTransaksi {
     }
 
     /**
-     * Menampilkan total bayar dengan diskon saat baris tabel diklik.
-     * @param row Baris tabel yang dipilih.
+     * Menampilkan total bayar dengan diskon saat output diklik.
      */
     public void showTotalBayar(int row) {
         try {
+            if (view == null) {
+                System.out.println("View is null in showTotalBayar!");
+                JOptionPane.showMessageDialog(null, "View belum diinisialisasi! Silakan lakukan aksi lain (misalnya, muat data) terlebih dahulu.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
             double harga = (double) view.getTableModel().getValueAt(row, 3);
             int jumlah = (int) view.getTableModel().getValueAt(row, 4);
             model.setHarga(harga);
             model.setJumlah(jumlah);
-            double totalBayar = model.hitungTotalBayar();
-            JOptionPane.showMessageDialog(null, "Total Bayar: Rp " + String.format("%.2f", totalBayar));
+
+            // Hitung total
+            double totalSebelumDiskon = harga * jumlah;
+            double diskon = (jumlah > 5) ? totalSebelumDiskon * 0.1 : 0;
+            double totalBayar = totalSebelumDiskon - diskon;
+
+            // Format angka tanpa desimal jika bulat
+            DecimalFormat formatter = new DecimalFormat("#,###");
+            String hargaStr = "Rp " + formatter.format(harga);
+            String totalSebelumDiskonStr = formatter.format(totalSebelumDiskon);
+            String diskonStr = formatter.format(diskon);
+            String totalBayarStr = "Rp " + formatter.format(totalBayar);
+
+            // Buat pesan pop-up
+            String message = String.format(
+                "Harga: %s\n" +
+                "Jumlah: %d\n" +
+                "Total: %s × %d = %s\n" +
+                "%s: %s × 10%% = %s\n" +
+                "Total bayar: %s",
+                hargaStr, jumlah, hargaStr, jumlah, totalSebelumDiskonStr,
+                (jumlah > 5) ? "Diskon 10%" : "Diskon 10% (tidak berlaku)", totalSebelumDiskonStr, diskonStr, totalBayarStr
+            );
+
+            JOptionPane.showMessageDialog(view, message, "Detail Total Bayar", JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "Error menghitung total: " + e.getMessage());
+            e.printStackTrace(); // Cetak stack trace untuk debugging
+            JOptionPane.showMessageDialog(view, "Error menghitung total: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     /**
-     * Memuat transaksi hari ini dari database ke tabel.
-     * @param view ViewTransaksi yang digunakan.
      * @throws SQLException Jika terjadi error database.
      */
     public void loadTransaksiHariIni(ViewTransaksi view) throws SQLException {
+        this.view = view; // Simpan referensi
         view.getTableModel().setRowCount(0); // Kosongkan tabel
         Connection conn = Database.getConnection();
+        if (conn == null) {
+            throw new SQLException("Gagal terhubung ke database!");
+        }
+        String sql = "SELECT id_transaksi, nama_pelanggan, nama_obat, harga, jumlah FROM transaksi";
         PreparedStatement stmt = conn.prepareStatement(sql);
         ResultSet rs = stmt.executeQuery();
         while (rs.next()) {
@@ -208,14 +237,8 @@ public class ControllerTransaksi {
                 rs.getString("nama_pelanggan"),
                 rs.getString("nama_obat"),
                 rs.getDouble("harga"),
-                rs.getInt("jumlah"),
+                rs.getInt("jumlah")
             });
-        }
-    }
-
-    private static class view {
-
-        public view() {
         }
     }
 }
